@@ -227,7 +227,8 @@ def fix_loader_name(name):
         return 'ctransformers'
     elif name in ['autoawq', 'awq', 'auto-awq']:
         return 'AutoAWQ'
-
+    else:
+        return name
 
 def add_extension(name):
     if args.extensions is None:
