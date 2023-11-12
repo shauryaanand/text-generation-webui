@@ -97,6 +97,7 @@ def load_model(model_name, loader=None):
     if any((shared.args.xformers, shared.args.sdp_attention)):
         llama_attn_hijack.hijack_llama_attention()
 
+    shared.settings.update({k: v for k, v in metadata.items() if k in shared.settings})
     logger.info(f"Loaded the model in {(time.time()-t0):.2f} seconds.")
     return model, tokenizer
 
@@ -134,7 +135,8 @@ def huggingface_loader(model_name):
     params = {
         'low_cpu_mem_usage': True,
         'trust_remote_code': shared.args.trust_remote_code,
-        'torch_dtype': torch.bfloat16 if shared.args.bf16 else torch.float16
+        'torch_dtype': torch.bfloat16 if shared.args.bf16 else torch.float16,
+        'use_safetensors': True if shared.args.force_safetensors else None
     }
 
     if shared.args.loader == "Petals" and shared.args.gpu_split:
@@ -142,30 +144,19 @@ def huggingface_loader(model_name):
         for key in model_config.keys():
             params[key] = model_config[key]
 
+    if shared.args.use_flash_attention_2:
+        params['use_flash_attention_2'] = True
+
     config = AutoConfig.from_pretrained(path_to_model, trust_remote_code=params['trust_remote_code'])
 
     if 'chatglm' in model_name.lower():
         LoaderClass = AutoModel
-    elif shared.args.loader == "petals":
-        from petals import AutoDistributedModelForCausalLM
-        LoaderClass = AutoDistributedModelForCausalLM
     else:
         if config.to_dict().get('is_encoder_decoder', False):
             LoaderClass = AutoModelForSeq2SeqLM
             shared.is_seq2seq = True
         else:
             LoaderClass = AutoModelForCausalLM
-
-    conditions = [
-        shared.args.cpu,
-        torch.cuda.is_available(),
-        torch.backends.mps.is_available(),
-        hasattr(torch, 'xpu') and torch.xpu.is_available(),
-    ]
-
-    if not any(conditions):
-        logger.warning('No GPU has been detected by Pytorch. Falling back to CPU mode.')
-        shared.args.cpu = True
 
     # Load the model in simple 16-bit mode by default
     if not any([shared.args.cpu, shared.args.load_in_8bit, shared.args.load_in_4bit, shared.args.auto_devices, shared.args.disk, shared.args.deepspeed, shared.args.gpu_memory is not None, shared.args.cpu_memory is not None, shared.args.compress_pos_emb > 1, shared.args.alpha_value > 1, shared.args.disable_exllama]):
