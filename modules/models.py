@@ -1,4 +1,5 @@
 import gc
+import json
 import os
 import re
 import time
@@ -69,7 +70,7 @@ def load_model(model_name, loader=None):
         'ExLlamav2_HF': ExLlamav2_HF_loader,
         'ctransformers': ctransformers_loader,
         'AutoAWQ': AutoAWQ_loader,
-        'petals': huggingface_loader,
+        'Petals': huggingface_loader,
     }
 
     if loader is None:
@@ -122,7 +123,7 @@ def load_tokenizer(model_name, model):
 
 def huggingface_loader(model_name):
 
-    if shared.args.loader == "petals":
+    if shared.args.loader == "Petals":
         path_to_model = model_name
         import logging
         httpx_logger = logging.getLogger('httpx')
@@ -136,7 +137,7 @@ def huggingface_loader(model_name):
         'torch_dtype': torch.bfloat16 if shared.args.bf16 else torch.float16
     }
 
-    if shared.args.loader == "petals" and shared.args.gpu_split:
+    if shared.args.loader == "Petals" and shared.args.gpu_split:
         model_config = json.loads(shared.args.gpu_split)
         for key in model_config.keys():
             params[key] = model_config[key]

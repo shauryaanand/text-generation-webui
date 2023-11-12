@@ -27,7 +27,7 @@ loaders_and_params = OrderedDict({
         'disable_exllama',
         'transformers_info'
     ],
-    'petals': [
+    'Petals': [
         'trust_remote_code',
         'gpu_split'
     ],
@@ -181,7 +181,7 @@ loaders_samplers = {
         'skip_special_tokens',
         'auto_max_new_tokens',
     },
-    'petals': {
+    'Petals': {
         'temperature',
         'top_p',
         'top_k',
